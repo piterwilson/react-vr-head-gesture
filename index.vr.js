@@ -36,7 +36,23 @@ export default class VRHeadGestureDetection extends React.Component {
         textAlign: 'center',
         textAlignVertical: 'center',
         transform: [{translate: [0, 0, 0]}]
-      }
+      },
+      textBig : {
+        fontSize: 0.125,
+        height: 0.15,
+        width: containerWidth * 0.9,
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        transform: [{translate: [0, 0, 0]}]
+      },
+      textVeryBig : {
+        fontSize: 0.2,
+        height: 0.2,
+        width: containerWidth * 0.9,
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        transform: [{translate: [0, 0, 0]}]
+      },
     });
 
     // motions from the user
@@ -46,9 +62,9 @@ export default class VRHeadGestureDetection extends React.Component {
     this.state = {
       lastPosition: {},
       motionDirection : Constants.MOTION_DIRECTION_NONE,
-      motionDirectionString : "HEAD GESTURE DEMO",
-      gestureName: "NOD TO START",
-      debug: true
+      string1 : "∼ HEAD GESTURE DEMO ∼",
+      string2: "NOD TO START.",
+      showString1: true
     }
   }
 
@@ -106,9 +122,9 @@ export default class VRHeadGestureDetection extends React.Component {
     } else {
       // no `motionDirection` stablished yet, set from the value in `newMotion`
       if(newMotion == Constants.MOTION_UP || newMotion == Constants.MOTION_DOWN) {
-        this.setState({ motionDirection : Constants.MOTION_DIRECTION_UP_DOWN, motionDirectionString: "HEAD MOTION: UP/DOWN"});
+        this.setState({ motionDirection : Constants.MOTION_DIRECTION_UP_DOWN});
       } else {
-        this.setState({ motionDirection : Constants.MOTION_DIRECTION_LEFT_RIGHT, motionDirectionString: "HEAD MOTION: LEFT/RIGHT"});
+        this.setState({ motionDirection : Constants.MOTION_DIRECTION_LEFT_RIGHT});
       }
     }
     // add this motion at the begining of the `motions` Array
@@ -127,13 +143,14 @@ export default class VRHeadGestureDetection extends React.Component {
     if (this.motions.length == Constants.MOTION_NUMBER_TO_ANALYZE) {
       let total = this.motions.reduce((t, n) => { return t += n }, 0);
       if (total == 0) {
+        this.setState({showString1: false});
         if (this.state.motionDirection == Constants.MOTION_DIRECTION_LEFT_RIGHT) {
           // no
-          this.setState({gestureName : "DETECTED HEAD GESTURE: NO"})
+          this.setState({string2 : "NO."})
           console.log("no!");
         } else if (this.state.motionDirection == Constants.MOTION_DIRECTION_UP_DOWN) {
           // yes
-          this.setState({gestureName : "DETECTED HEAD GESTURE: YES"})
+          this.setState({string2 : "YES."})
           console.log("yes!");
         }
       }
@@ -145,8 +162,8 @@ export default class VRHeadGestureDetection extends React.Component {
     this.setState({ 
       lastPosition: null, 
       motionDirection : Constants.MOTION_DIRECTION_NONE, 
-      motionDirectionString: "", 
-      gestureName : ""
+      string1: "", 
+      string2 : ""
     });
   }
 
@@ -158,22 +175,22 @@ export default class VRHeadGestureDetection extends React.Component {
       }}>
 
         <Pano source={ this.props.panoSource == null ? asset('galaxydisk.png') : this.props.panoSource }/>
-        
-        {this.state.debug ? 
+         
         <View  
           style = {this.styles.container} >
+            {this.state.showString1 ? 
             <Text
               pointerEvents = 'none'
               style = {this.styles.text} >
-            {this.state.motionDirectionString}
+            {this.state.string1}
             </Text>
+            : null }
             <Text
               pointerEvents = 'none'
-              style = {this.styles.text} >
-              {this.state.gestureName}
+              style = {this.state.showString1 ? this.styles.textBig : this.styles.textVeryBig} >
+              {this.state.string2}
             </Text>
         </View>
-        : null }
       </View>
     );
   }
