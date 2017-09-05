@@ -22,6 +22,7 @@ export default class VRHeadGestureDetection extends React.Component {
         flex: 1,
         flexDirection: 'column',
         justifyContent: 'center',
+        backgroundColor: 'black',
         alignItems: 'center',
         width: containerWidth,
         height: containerHeight,
@@ -170,11 +171,16 @@ export default class VRHeadGestureDetection extends React.Component {
   render() {
     return (
       <View 
+      
       onHeadPose = {() => {
         this.onHeadPose();
       }}>
 
-        <Pano source={ this.props.panoSource == null ? asset('galaxydisk.png') : this.props.panoSource }/>
+        <Pano 
+          style={{
+            tintColor: 'black'
+          }}
+        />
          
         <View  
           style = {this.styles.container} >
