@@ -8,6 +8,10 @@ Additionally, the almost universal nature of these gestures may be taken advanta
 
 ![Head gestures](https://media.giphy.com/media/ijdxTwx7tyPJK/giphy.gif)
 
+## Demo
+
+See it in action at http://piterwilson.com/demos/react-vr-head-gesture/
+
 ## Requirements
 
 * npm (https://www.npmjs.com/)
