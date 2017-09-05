@@ -6,108 +6,138 @@ import {
   Text,
   View,
   VrHeadModel,
-  Animated
+  StyleSheet
 } from 'react-vr';
 
 export default class VRHeadGestureDetection extends React.Component {
 
   constructor(props) {
     super(props);
-    // a time out to clear the mouse positions
-    this.timeout = null;
+
+    // setup some styles
+    var containerWidth = 1, containerHeight = 0.5, textHeight = containerHeight / 2;
+    this.styles = StyleSheet.create({
+      container: {
+        position: 'absolute',
+        flex: 1,
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: containerWidth,
+        height: containerHeight,
+        borderColor: 'white',
+        borderWidth: 0.005,
+        transform: [ {translate: [-0.5, 0.25, -1]}]
+      },
+      text : {
+        fontSize: 0.05,
+        height: 0.075,
+        width: containerWidth * 0.8,
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        transform: [{translate: [0, 0, 0]}]
+      }
+    });
+
     // motions from the user
     this.motions = [];
+
     // state
     this.state = {
       lastPosition: {},
       motionDirection : Constants.MOTION_DIRECTION_NONE,
-      motionDirectionString : "",
-      gestureName: "",
-      zPosition : -1
+      motionDirectionString : "HEAD GESTURE DEMO",
+      gestureName: "NOD TO START",
+      debug: true
     }
-    console.log(Easing);
   }
 
-  componentDidMount() {  
-  }
-
-  onHeadPose(event){
-    let currYPR = VrHeadModel.yawPitchRoll();
-    let yaw = currYPR[0];
-    let pitch = currYPR[1];
-    // console.log('pitch: ', pitch);
-    // console.log('yaw: ', yaw);
-    // console.log(ReactVRConstants);
-    var x = pitch, y = yaw;
+  /**
+   * `onHeadPose` collects the pitch and yaw properties stored in VrHeadModel. 
+   * It will check the current values and compare them with the previous saved values to assess if a threshold of motion in either axis has occurred.
+   * When significant motion is detected in pitch or yaw, a value (stored in Constants) identifying the motion will be added to the `motions` property in the state via the `addMotion` function, afterwards the values in the `positions` Array are analyzed in the `analyzPositions()` function. 
+   */
+  onHeadPose() {
+    let currYPR = VrHeadModel.yawPitchRoll(), yaw = currYPR[0], pitch = currYPR[1];
     if (this.state.lastPosition) {
-      // console.log("diff in y " + Math.abs( y - this.state.lastPosition.y));
-      // console.log("diff in x " + Math.abs( x - this.state.lastPosition.x));
-      if( Math.abs( y - this.state.lastPosition.y) > Constants.MOTION_THRESHOLD ){
+      if(Math.abs( yaw - this.state.lastPosition.yaw) > Constants.MOTION_THRESHOLD) {
         // significant motion on Y
-        if (y > this.state.lastPosition.y) {
-          // console.log("down");
-          this.addPosition(Constants.MOTION_DOWN);
+        if (yaw > this.state.lastPosition.yaw) {
+          this.addMotion(Constants.MOTION_DOWN);
         } else {
-          // console.log("up");
-          this.addPosition(Constants.MOTION_UP);
+          this.addMotion(Constants.MOTION_UP);
         }
-      } else if (Math.abs( x - this.state.lastPosition.x) > Constants.MOTION_THRESHOLD ) {
+      } else if (Math.abs(pitch - this.state.lastPosition.pitch) > Constants.MOTION_THRESHOLD) {
         // significant motion on X
-        if (x > this.state.lastPosition.x) {
-          // console.log("right");
-          this.addPosition(Constants.MOTION_RIGHT);
+        if (pitch > this.state.lastPosition.pitch) {
+          this.addMotion(Constants.MOTION_RIGHT);
         } else {
-          // console.log("left");
-          this.addPosition(Constants.MOTION_LEFT);
+          this.addMotion(Constants.MOTION_LEFT);
         }
       }
     }
     this.analyzeMotions();
-    this.setState({lastPosition : {x : x, y: y}});
+    this.setState({lastPosition : { pitch : pitch, yaw: yaw }});
   }
 
-  addPosition(pos) {
-    this.motions.unshift(pos);
+  /**
+   * `addMotion` takes a numeric value representing a motion direction and stores into the first position of the `motions` property.
+   * 
+   * For the purpouses of gesture detection, the following validation is performed :
+   * 
+   *  - The `motions` Array may only hold the latest 4 positions.
+   *  - The `motions` Array may only hold position values that occur in the same axis of motion (either pitch or yaw motions). When a change of axis is detected, the `motions` array is reset. A `motionDirection` property is used to enable this check.
+   * 
+   * @param {Number} newMotion A Numeric number identifying a motion in yaw (up/down) or pitch (left/right)
+   */
+  addMotion(newMotion) {
     if (this.state.motionDirection == Constants.MOTION_DIRECTION_UP_DOWN) {
-      if(pos == Constants.MOTION_LEFT || pos == Constants.MOTION_RIGHT) {
-        // added side motion when doing up down
+      if(newMotion == Constants.MOTION_LEFT || newMotion == Constants.MOTION_RIGHT) {
+        // added pitch motion when the current direction is yaw
         this.resetMotions();
         return;
       }
     } else if (this.state.motionDirection == Constants.MOTION_DIRECTION_LEFT_RIGHT) {
-      if(pos == Constants.MOTION_UP || pos == Constants.MOTION_DOWN) {
-        // added up/down motion when doing sideways
+      if(newMotion == Constants.MOTION_UP || newMotion == Constants.MOTION_DOWN) {
+        // added yaw motion when the current direction is pitch
         this.resetMotions();
         return;
       }
     } else {
-      if(pos == Constants.MOTION_UP || pos == Constants.MOTION_DOWN) {
-        this.setState({ motionDirection : Constants.MOTION_DIRECTION_UP_DOWN, motionDirectionString: "UP/DOWN"});
+      // no `motionDirection` stablished yet, set from the value in `newMotion`
+      if(newMotion == Constants.MOTION_UP || newMotion == Constants.MOTION_DOWN) {
+        this.setState({ motionDirection : Constants.MOTION_DIRECTION_UP_DOWN, motionDirectionString: "HEAD MOTION: UP/DOWN"});
       } else {
-        this.setState({ motionDirection : Constants.MOTION_DIRECTION_LEFT_RIGHT, motionDirectionString: "LEFT/RIGHT"});
+        this.setState({ motionDirection : Constants.MOTION_DIRECTION_LEFT_RIGHT, motionDirectionString: "HEAD MOTION: LEFT/RIGHT"});
       }
     }
+    // add this motion at the begining of the `motions` Array
+    this.motions.unshift(newMotion);
+    // keep the size of the `motions` Array to 4
     if (this.motions.length == Constants.MOTION_NUMBER_TO_ANALYZE + 1) {
       this.motions.pop();
     }
   }
 
+  /**
+   * This function takes the `motions` Array which at this point should only contain 4 numbers describing motions in the same axis.
+   * It will take the values in the Array and add them up, if their sum is zero it means it has found 2 opposing motions (2 up, 2 down or 2 left, 2 right) which is the minimum required to recognize a up/down or side/side head motions.
+   */
   analyzeMotions() {
     if (this.motions.length == Constants.MOTION_NUMBER_TO_ANALYZE) {
       let total = this.motions.reduce((t, n) => { return t += n }, 0);
       if (total == 0) {
         if (this.state.motionDirection == Constants.MOTION_DIRECTION_LEFT_RIGHT) {
           // no
-          this.setState({gestureName : "NOPE!"})
+          this.setState({gestureName : "DETECTED HEAD GESTURE: NO"})
           console.log("no!");
         } else if (this.state.motionDirection == Constants.MOTION_DIRECTION_UP_DOWN) {
           // yes
-          this.setState({gestureName : "YEAH"})
+          this.setState({gestureName : "DETECTED HEAD GESTURE: YES"})
           console.log("yes!");
         }
       }
     }
-    // console.log(this.motions);
   }
 
   resetMotions() {
@@ -116,64 +146,34 @@ export default class VRHeadGestureDetection extends React.Component {
       lastPosition: null, 
       motionDirection : Constants.MOTION_DIRECTION_NONE, 
       motionDirectionString: "", 
-      gestureName : ""});
+      gestureName : ""
+    });
   }
 
   render() {
     return (
-      <View onHeadPose = {(event) => {
-        this.onHeadPose(event);
+      <View 
+      onHeadPose = {() => {
+        this.onHeadPose();
       }}>
-        <Pano source={asset('galaxydisk.png')}/>
+
+        <Pano source={ this.props.panoSource == null ? asset('galaxydisk.png') : this.props.panoSource }/>
+        
+        {this.state.debug ? 
         <View  
-        id = "main"
-        onInput = {(ev) => {
-            //console.log(this); // refers to the React Component
-            //{type: "MouseInputEvent", eventType: "mousemove", altKey: false, button: 0, buttons: 0, …}altKey: falsebutton: 0buttons: 0ctrlKey: falseeventType: "mousemove"metaKey: falseshiftKey: falsetype: "MouseInputEvent"viewportX: 0.30253025302530245viewportY: -0.8146487294469358__proto__: Object
-            console.log(ev.nativeEvent.inputEvent);
-            if (ev.nativeEvent.inputEvent.eventType == "click") {
-              this.setState({zPosition : -2});
-            }
-          }
-        }
-        style = {{
-          flex: 1,
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          width: 1,
-          height: 1,
-          borderColor: 'white',
-          borderWidth: 0.005,
-          transform: [
-            {translate: [-0.5, 0.5, this.state.zPosition]}
-            ]
-        }}>
-          <Text
-          pointerEvents = 'none'
-          style={{
-            fontSize: 0.125,
-            height: 0.125,
-            textAlign: 'center',
-            textAlignVertical: 'center',
-            opacity: 0.5,
-            transform: [{translate: [0, 0, -1]}],
-          }}>
-          {this.state.motionDirectionString}
-        </Text>
-        <Text
-          pointerEvents = 'none'
-          style={{
-            fontSize: 0.125,
-            textAlign: 'center',
-            height: 0.125,
-            textAlignVertical: 'center',
-            transform: [{translate: [0, 0, -1]}],
-          }}>
-          {this.state.gestureName}
-        </Text>
-      </View>
-      
+          style = {this.styles.container} >
+            <Text
+              pointerEvents = 'none'
+              style = {this.styles.text} >
+            {this.state.motionDirectionString}
+            </Text>
+            <Text
+              pointerEvents = 'none'
+              style = {this.styles.text} >
+              {this.state.gestureName}
+            </Text>
+        </View>
+        : null }
       </View>
     );
   }

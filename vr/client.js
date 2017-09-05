@@ -9,6 +9,7 @@ function init(bundle, parent, options) {
   const vr = new VRInstance(bundle, 'react_vr_head_gesture', parent, {
     // Add custom options here
     ...options,
+    allowCarmelDeeplink: true
   });
   vr.render = function() {
     // Any custom behavior you want to perform on each frame goes here
